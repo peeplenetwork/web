@@ -10,6 +10,13 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+        }
+        canvas {
+            width: 50%;
+            height: 50vh;
         }
         .hero {
             background: linear-gradient(135deg, #1e3a8a, #3b82f6);
@@ -24,6 +31,104 @@
     </style>
 </head>
 <body>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script>
+        // Khởi tạo scene, camera, renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight/2);
+        document.body.appendChild(renderer.domElement);
+
+        // Thêm ánh sáng
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
+        pointLight.position.set(50, 50, 50);
+        scene.add(pointLight);
+
+        // Tạo nền sao (starfield)
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsCount = 5000;
+        const starsPositions = new Float32Array(starsCount * 3);
+        for (let i = 0; i < starsCount * 3; i++) {
+            starsPositions[i] = (Math.random() - 0.5) * 2000; // Phân bố ngẫu nhiên trong không gian
+        }
+        starsGeometry.setAttribute('position', new THREE.BufferAttribute(starsPositions, 3));
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 1 });
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+
+        // Tạo danh sách các node (user/PC)
+        const nodes = [];
+        const nodeCount = 20; // Số lượng user
+        const nodeGeometry = new THREE.SphereGeometry(2, 32, 32);
+        const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+
+        for (let i = 0; i < nodeCount; i++) {
+            const node = new THREE.Mesh(nodeGeometry, nodeMaterial);
+            node.position.set(
+                (Math.random() - 0.5) * 100, // x
+                (Math.random() - 0.5) * 100, // y
+                (Math.random() - 0.5) * 100  // z
+            );
+            scene.add(node);
+            nodes.push(node);
+
+            // Thêm dữ liệu (icon nhỏ) xoay quanh node
+            const dataGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            const dataMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            const dataIcon = new THREE.Mesh(dataGeometry, dataMaterial);
+            dataIcon.position.set(node.position.x + 3, node.position.y, node.position.z);
+            scene.add(dataIcon);
+            node.dataIcon = dataIcon; // Gắn icon vào node để xử lý animation
+        }
+
+        // Tạo kết nối giữa các node
+        const edgesMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff });
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                if (Math.random() > 0.7) { // Xác suất kết nối ngẫu nhiên
+                    const points = [];
+                    points.push(nodes[i].position);
+                    points.push(nodes[j].position);
+                    const edgesGeometry = new THREE.BufferGeometry().setFromPoints(points);
+                    const edge = new THREE.Line(edgesGeometry, edgesMaterial);
+                    scene.add(edge);
+                }
+            }
+        }
+
+        // Đặt camera
+        camera.position.z = 150;
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Quay các node và dữ liệu
+            nodes.forEach((node, index) => {
+                node.rotation.y += 0.01;
+                const angle = Date.now() * 0.001 + index; // Tạo chuyển động xoay vòng
+                node.dataIcon.position.x = node.position.x + Math.cos(angle) * 3;
+                node.dataIcon.position.z = node.position.z + Math.sin(angle) * 3;
+            });
+
+            // Quay nhẹ toàn bộ cảnh
+            scene.rotation.y += 0.001;
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Xử lý thay đổi kích thước cửa sổ
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
         <div class="container">
@@ -58,12 +163,12 @@
                data-lang-vi="Mạng xã hội phi tập trung hoàn toàn, sử dụng công nghệ blockchain và P2P.">
                 A fully decentralized social network powered by blockchain and P2P technology.
             </p>
-            <a href="#" class="btn btn-light btn-lg mt-3">Get Started</a>
+            <a href="https://docs.google.com/document/d/1C7vNdsSyK2aPA4E_EGjOsQdSDfX2h5twMNfNtOVIDCw/edit?usp=sharing" class="btn btn-light btn-lg mt-3" target="_blank" id=wpp>White Paper</a>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="py-5">
+    <section id="features" class="py-5" style="background:white;">
         <div class="container">
             <h2 class="text-center mb-5" data-lang-en="Why Peeple?" data-lang-vi="Tại sao chọn Peeple?">Why Peeple?</h2>
             <div class="row">
@@ -125,7 +230,8 @@
             <h2 class="text-center mb-5" data-lang-en="Our Team" data-lang-vi="Đội ngũ của chúng tôi">Our Team</h2>
             <p class="text-center" data-lang-en="We are a group of anonymous innovators passionate about decentralization and privacy."
                data-lang-vi="Chúng tôi là một nhóm các nhà đổi mới ẩn danh, đam mê về phi tập trung và quyền riêng tư.">
-                We are a group of anonymous innovators passionate about decentralization and privacy.
+                We are a group of anonymous innovators passionate about decentralization and privacy.<br>
+                Join us at: <a href="https://t.me/PeepleOfficial">Peeple Telegram</a>
             </p>
         </div>
     </section>
@@ -134,8 +240,9 @@
     <footer class="py-4 bg-dark text-white text-center">
         <div class="container">
             <p data-lang-en="© 2025 Peeple. All rights reserved." data-lang-vi="© 2025 Peeple. Mọi quyền được bảo lưu.">
-                © 2025 Peeple. All rights reserved.
+                © 2025 Peeple.Network
             </p>
+            <p>Join us at: <a href="https://t.me/PeepleOfficial">Peeple Telegram</a></p>
         </div>
     </footer>
 
@@ -148,9 +255,14 @@
         if (userLang.startsWith('vi')) {
             langSwitch.value = 'vi';
             switchLanguage('vi');
+            const link = document.getElementById('wpp');
+            // Thay đổi thuộc tính href
+            link.setAttribute('href', 'https://docs.google.com/document/d/1C7vNdsSyK2aPA4E_EGjOsQdSDfX2h5twMNfNtOVIDCw/edit?usp=sharing');
         } else {
             langSwitch.value = 'en';
             switchLanguage('en');
+            const link = document.getElementById('wpp');
+            link.setAttribute('href', 'https://docs.google.com/document/d/1fXYJdmFLiN2qw4t_6d6xkygICp_YF8hd-AkRLntzye4/edit?usp=sharing');
         }
 
         // Language switch logic
